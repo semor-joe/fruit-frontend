@@ -1,0 +1,12 @@
+// Placeholder for add icon - replace with actual image file
+// This is just a text file as placeholder
+// You need to replace this with actual PNG image files for the tab bar icons:
+// - add.png (inactive state)
+// - add-active.png (active state)
+// - check.png (inactive state) 
+// - check-active.png (active state)
+// - stats.png (inactive state)
+// - stats-active.png (active state)
+
+// Recommended icon size: 81x81 pixels
+// Format: PNG with transparency

@@ -1,0 +1,171 @@
+<view class="container">
+  <!-- Search and Filter -->
+  <view class="search-section">
+    <view class="search-bar">
+      <input 
+        class="search-input" 
+        placeholder="搜索内容..." 
+        value="{{searchKeyword}}" 
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+      />
+      <button class="search-btn" bindtap="onSearchConfirm">搜索</button>
+    </view>
+    
+    <view class="filter-bar">
+      <picker 
+        bindchange="onLandBlockFilterChange" 
+        value="{{landBlockFilterIndex}}" 
+        range="{{landBlockFilter}}" 
+        range-key="name"
+        class="filter-picker"
+      >
+        <view class="filter-item">
+          <text class="filter-text">{{landBlockFilter[landBlockFilterIndex].name}}</text>
+        </view>
+      </picker>
+      
+      <picker 
+        bindchange="onDateRangeChange" 
+        mode="date" 
+        value="{{dateRange}}"
+        class="filter-picker"
+      >
+        <view class="filter-item">
+          <text class="filter-text">{{dateRange || '选择日期'}}</text>
+        </view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- Content List -->
+  <view class="content-list">
+    <view 
+      class="content-item" 
+      wx:for="{{contentList}}" 
+      wx:key="id"
+      bindtap="onContentItemTap"
+      data-item="{{item}}"
+    >
+      <view class="content-header">
+        <view class="content-meta">
+          <text class="land-block-name">{{item.land_block_name}}</text>
+          <text class="content-date">{{item.created_at}}</text>
+        </view>
+        <view class="content-actions">
+          <text class="action-btn" bindtap="editContent" data-id="{{item.id}}">编辑</text>
+          <text class="action-btn delete" bindtap="deleteContent" data-id="{{item.id}}">删除</text>
+        </view>
+      </view>
+
+      <view class="content-body">
+        <text class="content-text" wx:if="{{item.content}}">{{item.content}}</text>
+        <view class="content-images" wx:if="{{item.img_url}}">
+          <image 
+            class="content-image" 
+            src="{{item.img_url}}" 
+            mode="aspectFill"
+            bindtap="previewImage"
+            data-url="{{item.img_url}}"
+          ></image>
+        </view>
+      </view>
+
+      <view class="content-analysis" wx:if="{{item.extracted_data}}">
+        <view class="analysis-header">
+          <text class="analysis-title">AI分析结果</text>
+          <text class="toggle-btn" bindtap="toggleAnalysis" data-id="{{item.id}}">
+            {{item.showAnalysis ? '收起' : '展开'}}
+          </text>
+        </view>
+        
+        <view class="analysis-content" wx:if="{{item.showAnalysis}}">
+          <view class="analysis-item" wx:if="{{item.extracted_data.fertilizers && item.extracted_data.fertilizers.length > 0}}">
+            <text class="analysis-label">肥料信息:</text>
+            <view class="fertilizer-tags">
+              <text 
+                class="fertilizer-tag" 
+                wx:for="{{item.extracted_data.fertilizers}}" 
+                wx:key="index"
+                wx:for-item="fertilizer"
+              >
+                {{fertilizer.name}} {{fertilizer.amount}}{{fertilizer.unit}}
+              </text>
+            </view>
+          </view>
+          
+          <view class="analysis-item" wx:if="{{item.extracted_data.crops}}">
+            <text class="analysis-label">作物信息:</text>
+            <text class="analysis-text">{{item.extracted_data.crops}}</text>
+          </view>
+          
+          <view class="analysis-item" wx:if="{{item.extracted_data.conditions}}">
+            <text class="analysis-label">环境条件:</text>
+            <text class="analysis-text">{{item.extracted_data.conditions}}</text>
+          </view>
+          
+          <view class="analysis-item" wx:if="{{item.extracted_data.suggestions}}">
+            <text class="analysis-label">建议:</text>
+            <text class="analysis-text">{{item.extracted_data.suggestions}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Empty State -->
+    <view class="empty-state" wx:if="{{contentList.length === 0 && !loading}}">
+      <image class="empty-image" src="/images/empty-content.png"></image>
+      <text class="empty-text">暂无内容</text>
+      <text class="empty-subtitle">快去添加一些农业信息吧</text>
+      <button class="empty-btn" bindtap="goToAddContent">添加内容</button>
+    </view>
+
+    <!-- Loading -->
+    <view class="loading-more" wx:if="{{loading}}">
+      <text>加载中...</text>
+    </view>
+
+    <!-- Load More -->
+    <view class="load-more" wx:if="{{hasMore && !loading}}" bindtap="loadMoreContent">
+      <text>加载更多</text>
+    </view>
+  </view>
+</view>
+
+<!-- Edit Modal -->
+<view class="modal" wx:if="{{showEditModal}}">
+  <view class="modal-content">
+    <view class="modal-header">
+      <text class="modal-title">编辑内容</text>
+      <text class="modal-close" bindtap="hideEditModal">×</text>
+    </view>
+    <view class="modal-body">
+      <view class="form-item">
+        <text class="form-label">内容</text>
+        <textarea 
+          class="form-textarea" 
+          value="{{editingContent.content}}" 
+          bindinput="onEditContentInput"
+          auto-height
+        ></textarea>
+      </view>
+      <view class="form-item">
+        <text class="form-label">地块</text>
+        <picker 
+          bindchange="onEditLandBlockChange" 
+          value="{{editingContent.landBlockIndex}}" 
+          range="{{landBlocks}}" 
+          range-key="name"
+        >
+          <view class="picker-display">
+            <text>{{landBlocks[editingContent.landBlockIndex].name}}</text>
+          </view>
+        </picker>
+      </view>
+    </view>
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="hideEditModal">取消</button>
+      <button class="btn-confirm" bindtap="saveEditContent" loading="{{updating}}">保存</button>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,330 @@
+/* Land Block Management Styles */
+.container {
+  padding: 20rpx;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 0 30rpx;
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.btn-add {
+  display: flex;
+  align-items: center;
+  background-color: #07c160;
+  color: white;
+  border: none;
+  border-radius: 8rpx;
+  padding: 12rpx 24rpx;
+  font-size: 28rpx;
+}
+
+.btn-add::after {
+  border: none;
+}
+
+.add-icon {
+  font-size: 32rpx;
+  margin-right: 8rpx;
+}
+
+/* Loading State */
+.loading {
+  text-align: center;
+  padding: 100rpx 0;
+  color: #999;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 120rpx 40rpx;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  display: block;
+  margin-bottom: 30rpx;
+}
+
+.empty-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.empty-desc {
+  font-size: 28rpx;
+  color: #666;
+  display: block;
+  margin-bottom: 40rpx;
+}
+
+.btn-empty-add {
+  background-color: #07c160;
+  color: white;
+  border: none;
+  border-radius: 8rpx;
+  padding: 16rpx 32rpx;
+  font-size: 28rpx;
+}
+
+.btn-empty-add::after {
+  border: none;
+}
+
+/* Land Blocks List */
+.land-blocks-list {
+  margin-top: 20rpx;
+}
+
+.land-block-item {
+  background-color: white;
+  border-radius: 12rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.land-block-main {
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.land-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20rpx;
+}
+
+.land-block-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  flex: 1;
+}
+
+.land-block-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.created-date {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.land-block-details {
+  margin-top: 20rpx;
+}
+
+.detail-item {
+  display: flex;
+  margin-bottom: 12rpx;
+}
+
+.detail-label {
+  font-size: 26rpx;
+  color: #666;
+  width: 120rpx;
+  flex-shrink: 0;
+}
+
+.detail-value {
+  font-size: 26rpx;
+  color: #333;
+  flex: 1;
+}
+
+.land-block-actions {
+  display: flex;
+  padding: 20rpx 30rpx;
+  gap: 20rpx;
+}
+
+.btn-edit, .btn-delete {
+  flex: 1;
+  border: none;
+  border-radius: 8rpx;
+  padding: 12rpx 0;
+  font-size: 28rpx;
+}
+
+.btn-edit {
+  background-color: #576b95;
+  color: white;
+}
+
+.btn-delete {
+  background-color: #fa5151;
+  color: white;
+}
+
+.btn-edit::after, .btn-delete::after {
+  border: none;
+}
+
+/* Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 40rpx;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 16rpx;
+  width: 100%;
+  max-width: 600rpx;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx 30rpx 20rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.modal-close {
+  font-size: 36rpx;
+  color: #999;
+  padding: 10rpx;
+  line-height: 1;
+}
+
+.modal-body {
+  padding: 30rpx;
+}
+
+.modal-footer {
+  display: flex;
+  padding: 20rpx 30rpx 30rpx;
+  gap: 20rpx;
+}
+
+.btn-cancel, .btn-confirm, .btn-delete-confirm {
+  flex: 1;
+  border: none;
+  border-radius: 8rpx;
+  padding: 16rpx 0;
+  font-size: 28rpx;
+}
+
+.btn-cancel {
+  background-color: #f0f0f0;
+  color: #666;
+}
+
+.btn-confirm {
+  background-color: #07c160;
+  color: white;
+}
+
+.btn-delete-confirm {
+  background-color: #fa5151;
+  color: white;
+}
+
+.btn-cancel::after, .btn-confirm::after, .btn-delete-confirm::after {
+  border: none;
+}
+
+/* Form Styles */
+.form-item {
+  margin-bottom: 30rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.form-input, .form-textarea {
+  width: 100%;
+  padding: 16rpx;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  background-color: #fafafa;
+  box-sizing: border-box;
+}
+
+.form-textarea {
+  height: 120rpx;
+  resize: none;
+}
+
+.form-input:focus, .form-textarea:focus {
+  border-color: #07c160;
+  background-color: white;
+}
+
+/* Delete Modal Styles */
+.delete-modal .modal-body {
+  text-align: center;
+}
+
+.delete-warning {
+  padding: 20rpx 0;
+}
+
+.warning-icon {
+  font-size: 80rpx;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.warning-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.warning-desc {
+  font-size: 28rpx;
+  color: #666;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.warning-note {
+  font-size: 24rpx;
+  color: #fa5151;
+  display: block;
+  line-height: 1.5;
+}

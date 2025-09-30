@@ -1,0 +1,160 @@
+<view class="container">
+  <!-- Date Range Selector -->
+  <view class="date-selector">
+    <view class="selector-title">统计时间范围</view>
+    <view class="date-range">
+      <picker 
+        mode="date" 
+        value="{{startDate}}" 
+        bindchange="onStartDateChange"
+        class="date-picker"
+      >
+        <view class="date-display">
+          <text class="date-label">开始日期</text>
+          <text class="date-value">{{startDate}}</text>
+        </view>
+      </picker>
+      
+      <text class="date-separator">至</text>
+      
+      <picker 
+        mode="date" 
+        value="{{endDate}}" 
+        bindchange="onEndDateChange"
+        class="date-picker"
+      >
+        <view class="date-display">
+          <text class="date-label">结束日期</text>
+          <text class="date-value">{{endDate}}</text>
+        </view>
+      </picker>
+    </view>
+    
+    <view class="quick-selectors">
+      <button class="quick-btn" bindtap="selectLastWeek">最近7天</button>
+      <button class="quick-btn" bindtap="selectLastMonth">最近30天</button>
+      <button class="quick-btn" bindtap="selectThisMonth">本月</button>
+    </view>
+  </view>
+
+  <!-- Overall Statistics -->
+  <view class="stats-overview">
+    <view class="stats-title">总体统计</view>
+    <view class="stats-grid">
+      <view class="stat-card">
+        <view class="stat-number">{{statistics.totalRecords}}</view>
+        <view class="stat-label">总记录数</view>
+      </view>
+      <view class="stat-card">
+        <view class="stat-number">{{statistics.totalLandBlocks}}</view>
+        <view class="stat-label">地块数量</view>
+      </view>
+      <view class="stat-card">
+        <view class="stat-number">{{statistics.totalImages}}</view>
+        <view class="stat-label">上传图片</view>
+      </view>
+      <view class="stat-card">
+        <view class="stat-number">{{statistics.totalFertilizers}}</view>
+        <view class="stat-label">肥料种类</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Land Block Statistics -->
+  <view class="stats-section">
+    <view class="section-title">地块统计</view>
+    <view class="land-block-stats">
+      <view 
+        class="land-block-item" 
+        wx:for="{{statistics.landBlockStats}}" 
+        wx:key="id"
+      >
+        <view class="land-block-info">
+          <text class="land-block-name">{{item.name}}</text>
+          <text class="record-count">{{item.recordCount}} 条记录</text>
+        </view>
+        <view class="progress-bar">
+          <view 
+            class="progress-fill" 
+            style="width: {{item.percentage}}%"
+          ></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Fertilizer Usage Statistics -->
+  <view class="stats-section">
+    <view class="section-title">肥料使用统计</view>
+    <view class="fertilizer-stats">
+      <view 
+        class="fertilizer-item" 
+        wx:for="{{statistics.fertilizerStats}}" 
+        wx:key="name"
+      >
+        <view class="fertilizer-info">
+          <text class="fertilizer-name">{{item.name}}</text>
+          <text class="fertilizer-usage">总用量: {{item.totalAmount}} {{item.unit}}</text>
+        </view>
+        <view class="usage-chart">
+          <view 
+            class="usage-bar" 
+            style="width: {{item.percentage}}%"
+          ></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Recent Activity -->
+  <view class="stats-section">
+    <view class="section-title">最近活动</view>
+    <view class="activity-timeline">
+      <view 
+        class="activity-item" 
+        wx:for="{{statistics.recentActivity}}" 
+        wx:key="id"
+      >
+        <view class="activity-date">{{item.date}}</view>
+        <view class="activity-content">
+          <view class="activity-title">{{item.title}}</view>
+          <view class="activity-description">{{item.description}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- AI Analysis Insights -->
+  <view class="stats-section">
+    <view class="section-title">AI分析洞察</view>
+    <view class="insights">
+      <view class="insight-item" wx:for="{{statistics.insights}}" wx:key="index">
+        <view class="insight-icon">💡</view>
+        <view class="insight-text">{{item}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Export Options -->
+  <view class="export-section">
+    <view class="section-title">数据导出</view>
+    <view class="export-buttons">
+      <button class="export-btn" bindtap="exportData" data-type="csv">
+        导出CSV
+      </button>
+      <button class="export-btn" bindtap="exportData" data-type="pdf">
+        导出PDF报告
+      </button>
+      <button class="export-btn" bindtap="shareReport">
+        分享报告
+      </button>
+    </view>
+  </view>
+</view>
+
+<!-- Loading State -->
+<view class="loading-overlay" wx:if="{{loading}}">
+  <view class="loading-content">
+    <text class="loading-text">正在加载统计数据...</text>
+  </view>
+</view>

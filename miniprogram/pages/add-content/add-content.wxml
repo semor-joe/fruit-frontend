@@ -1,0 +1,150 @@
+<view class="container">
+  <!-- Land Block Selection -->
+  <view class="section">
+    <view class="section-title">选择地块</view>
+    <picker 
+      bindchange="onLandBlockChange" 
+      value="{{landBlockIndex}}" 
+      range="{{landBlocks}}" 
+      range-key="name"
+      class="picker"
+    >
+      <view class="picker-display">
+        <text>{{landBlocks.length > 0 && landBlocks[landBlockIndex] ? landBlocks[landBlockIndex].name : '请选择地块'}}</text>
+        <text class="arrow">></text>
+      </view>
+    </picker>
+    <view class="section-actions">
+      <button class="btn-small" bindtap="showAddLandBlockDialog">新增地块</button>
+      <button class="btn-small" bindtap="manageLandBlocks">管理地块</button>
+    </view>
+  </view>
+
+  <!-- Text Input -->
+  <view class="section">
+    <view class="section-title">输入信息</view>
+    <textarea 
+      class="text-input" 
+      placeholder="请输入农业相关信息，如：施肥情况、作物状态、土壤条件等..." 
+      value="{{inputText}}" 
+      bindblur="onTextInput"
+      auto-height
+      maxlength="20000"
+    ></textarea>
+    <view class="char-count">{{inputText.length}}/2000</view>
+  </view>
+
+  <!-- Image Upload -->
+  <view class="section">
+    <view class="section-title">上传图片</view>
+    <view class="image-upload-area">
+      <view class="uploaded-images" wx:if="{{uploadedImages.length > 0}}">
+        <view 
+          class="image-item" 
+          wx:for="{{uploadedImages}}" 
+          wx:key="index"
+        >
+          <image src="{{item.url}}" mode="aspectFill" bindtap="previewImage" data-url="{{item.url}}"></image>
+          <view class="image-delete" bindtap="deleteImage" data-index="{{index}}">×</view>
+        </view>
+      </view>
+      <view class="upload-btn" bindtap="chooseImage" wx:if="{{uploadedImages.length < 9}}">
+        <text class="upload-icon">+</text>
+        <text class="upload-text">添加图片</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- AI Analysis Result -->
+  <view class="section" wx:if="{{analysisResult}}">
+    <view class="section-title">AI分析结果</view>
+    <view class="analysis-result">
+      <view class="result-item" wx:if="{{analysisResult.fertilizers && analysisResult.fertilizers.length > 0}}">
+        <text class="result-label">检测到的肥料:</text>
+        <view class="fertilizer-list">
+          <view 
+            class="fertilizer-item" 
+            wx:for="{{analysisResult.fertilizers}}" 
+            wx:key="index"
+          >
+            <text class="fertilizer-name">{{item.name}}</text>
+            <text class="fertilizer-amount">{{item.amount}} {{item.unit}}</text>
+          </view>
+        </view>
+      </view>
+      
+      <view class="result-item" wx:if="{{analysisResult.crops}}">
+        <text class="result-label">作物信息:</text>
+        <text class="result-content">{{analysisResult.crops}}</text>
+      </view>
+      
+      <view class="result-item" wx:if="{{analysisResult.conditions}}">
+        <text class="result-label">环境条件:</text>
+        <text class="result-content">{{analysisResult.conditions}}</text>
+      </view>
+      
+      <view class="result-item" wx:if="{{analysisResult.suggestions}}">
+        <text class="result-label">建议:</text>
+        <text class="result-content">{{analysisResult.suggestions}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Action Buttons -->
+  <view class="action-buttons">
+    <button 
+      class="btn-primary" 
+      type="default"
+      bindtap="analyzeContent" 
+      loading="{{analyzing}}"
+      disabled="{{!inputText}}"
+      plain="{{!inputText}}"
+    >
+      {{analyzing ? 'AI分析中...' : 'AI分析'}}
+    </button>
+    
+    <button 
+      class="btn-success" 
+      bindtap="saveContent" 
+      loading="{{saving}}"
+      disabled="{{!analysisResult}}"
+      wx:if="{{analysisResult}}"
+    >
+      {{saving ? '保存中...' : '保存数据'}}
+    </button>
+  </view>
+</view>
+
+<!-- Add Land Block Dialog -->
+<view class="modal" wx:if="{{showAddLandBlock}}">
+  <view class="modal-content">
+    <view class="modal-header">
+      <text class="modal-title">新增地块</text>
+      <text class="modal-close" bindtap="hideAddLandBlockDialog">×</text>
+    </view>
+    <view class="modal-body">
+      <view class="form-item">
+        <text class="form-label">地块名称</text>
+        <input 
+          class="form-input" 
+          placeholder="请输入地块名称" 
+          value="{{newLandBlock.name}}" 
+          bindinput="onNewLandBlockNameInput"
+        />
+      </view>
+      <view class="form-item">
+        <text class="form-label">地块描述</text>
+        <textarea 
+          class="form-textarea" 
+          placeholder="请输入地块描述（可选）" 
+          value="{{newLandBlock.description}}" 
+          bindinput="onNewLandBlockDescInput"
+        ></textarea>
+      </view>
+    </view>
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="hideAddLandBlockDialog">取消</button>
+      <button class="btn-confirm" bindtap="createLandBlock" loading="{{creatingLandBlock}}">确定</button>
+    </view>
+  </view>
+</view>

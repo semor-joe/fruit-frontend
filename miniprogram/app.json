@@ -1,0 +1,45 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/login/login",
+    "pages/add-content/add-content",
+    "pages/check-content/check-content",
+    "pages/statistics/statistics",
+    "pages/manage-landblocks/manage-landblocks",
+    "pages/logs/logs"
+  ],
+  "tabBar": {
+    "color": "#7A7E83",
+    "selectedColor": "#3cc51f",
+    "borderStyle": "black",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/add-content/add-content",
+        "iconPath": "images/add.png",
+        "selectedIconPath": "images/add-active.png",
+        "text": "添加内容"
+      },
+      {
+        "pagePath": "pages/check-content/check-content",
+        "iconPath": "images/check.png",
+        "selectedIconPath": "images/check-active.png",
+        "text": "查看内容"
+      },
+      {
+        "pagePath": "pages/statistics/statistics",
+        "iconPath": "images/stats.png",
+        "selectedIconPath": "images/stats-active.png",
+        "text": "统计"
+      }
+    ]
+  },
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "智能识别系统",
+    "navigationBarBackgroundColor": "#ffffff"
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "lazyCodeLoading": "requiredComponents"
+}

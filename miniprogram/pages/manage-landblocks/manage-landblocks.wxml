@@ -1,0 +1,157 @@
+<view class="container">
+  <!-- Header -->
+  <view class="header">
+    <text class="title">地块管理</text>
+    <button class="btn-add" bindtap="addNewLandBlock">
+      <text class="add-icon">+</text>
+      <text>新增地块</text>
+    </button>
+  </view>
+
+  <!-- Loading -->
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <!-- Empty State -->
+  <view class="empty-state" wx:if="{{!loading && landBlocks.length === 0}}">
+    <text class="empty-icon">📍</text>
+    <text class="empty-title">暂无地块</text>
+    <text class="empty-desc">您还没有创建任何地块</text>
+    <button class="btn-empty-add" bindtap="addNewLandBlock">创建第一个地块</button>
+  </view>
+
+  <!-- Land Blocks List -->
+  <view class="land-blocks-list" wx:if="{{!loading && landBlocks.length > 0}}">
+    <view 
+      class="land-block-item" 
+      wx:for="{{landBlocks}}" 
+      wx:key="id"
+    >
+      <view class="land-block-main" bindtap="viewLandBlockDetails" data-id="{{item.id}}">
+        <view class="land-block-header">
+          <text class="land-block-name">{{item.name}}</text>
+          <view class="land-block-meta">
+            <text class="created-date">{{formatDate(item.created_at)}}</text>
+          </view>
+        </view>
+        
+        <view class="land-block-details" wx:if="{{item.location || item.area || item.description}}">
+          <view class="detail-item" wx:if="{{item.location}}">
+            <text class="detail-label">位置:</text>
+            <text class="detail-value">{{item.location}}</text>
+          </view>
+          <view class="detail-item" wx:if="{{item.area}}">
+            <text class="detail-label">面积:</text>
+            <text class="detail-value">{{item.area}}平方米</text>
+          </view>
+          <view class="detail-item" wx:if="{{item.description}}">
+            <text class="detail-label">描述:</text>
+            <text class="detail-value">{{item.description}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="land-block-actions">
+        <button class="btn-edit" bindtap="editLandBlock" data-id="{{item.id}}">编辑</button>
+        <button class="btn-delete" bindtap="deleteLandBlock" data-id="{{item.id}}">删除</button>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- Edit Modal -->
+<view class="modal" wx:if="{{showEditModal}}">
+  <view class="modal-content">
+    <view class="modal-header">
+      <text class="modal-title">编辑地块</text>
+      <text class="modal-close" bindtap="hideEditModal">×</text>
+    </view>
+    <view class="modal-body">
+      <view class="form-item">
+        <text class="form-label">地块名称 *</text>
+        <input 
+          class="form-input" 
+          placeholder="请输入地块名称" 
+          value="{{editingLandBlock.name}}" 
+          bindinput="onEditNameInput"
+          maxlength="50"
+        />
+      </view>
+      <view class="form-item">
+        <text class="form-label">地块位置</text>
+        <input 
+          class="form-input" 
+          placeholder="请输入地块位置（可选）" 
+          value="{{editingLandBlock.location}}" 
+          bindinput="onEditLocationInput"
+          maxlength="100"
+        />
+      </view>
+      <view class="form-item">
+        <text class="form-label">地块面积（平方米）</text>
+        <input 
+          class="form-input" 
+          type="digit"
+          placeholder="请输入地块面积（可选）" 
+          value="{{editingLandBlock.area}}" 
+          bindinput="onEditAreaInput"
+        />
+      </view>
+      <view class="form-item">
+        <text class="form-label">地块描述</text>
+        <textarea 
+          class="form-textarea" 
+          placeholder="请输入地块描述（可选）" 
+          value="{{editingLandBlock.description}}" 
+          bindinput="onEditDescriptionInput"
+          maxlength="500"
+        ></textarea>
+      </view>
+    </view>
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="hideEditModal">取消</button>
+      <button 
+        class="btn-confirm" 
+        bindtap="saveEditLandBlock" 
+        loading="{{updating}}"
+        disabled="{{updating}}"
+      >
+        {{updating ? '更新中...' : '保存'}}
+      </button>
+    </view>
+  </view>
+</view>
+
+<!-- Delete Confirmation Modal -->
+<view class="modal" wx:if="{{showDeleteConfirm}}">
+  <view class="modal-content delete-modal">
+    <view class="modal-header">
+      <text class="modal-title">确认删除</text>
+      <text class="modal-close" bindtap="hideDeleteConfirm">×</text>
+    </view>
+    <view class="modal-body">
+      <view class="delete-warning">
+        <text class="warning-icon">⚠️</text>
+        <text class="warning-title">删除地块</text>
+        <text class="warning-desc">
+          您确定要删除地块"{{deletingLandBlock.name}}"吗？
+        </text>
+        <text class="warning-note">
+          删除后，该地块的所有相关数据也将被删除，此操作不可撤销。
+        </text>
+      </view>
+    </view>
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="hideDeleteConfirm">取消</button>
+      <button 
+        class="btn-delete-confirm" 
+        bindtap="confirmDeleteLandBlock" 
+        loading="{{deleting}}"
+        disabled="{{deleting}}"
+      >
+        {{deleting ? '删除中...' : '确认删除'}}
+      </button>
+    </view>
+  </view>
+</view>

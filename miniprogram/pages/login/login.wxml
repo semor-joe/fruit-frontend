@@ -1,0 +1,87 @@
+<view class="login-container">
+  <view class="header">
+    <image class="logo" src="/images/logo.png" mode="aspectFit"></image>
+    <text class="title">智能识别系统</text>
+    <text class="subtitle">欢迎使用农业智能管理平台</text>
+  </view>
+
+  <view class="login-content">
+    <view class="feature-list">
+      <view class="feature-item">
+        <image class="feature-icon" src="/images/ai-icon.png"></image>
+        <text class="feature-text">AI智能识别</text>
+      </view>
+      <view class="feature-item">
+        <image class="feature-icon" src="/images/data-icon.png"></image>
+        <text class="feature-text">数据管理</text>
+      </view>
+      <view class="feature-item">
+        <image class="feature-icon" src="/images/stats-icon.png"></image>
+        <text class="feature-text">统计分析</text>
+      </view>
+    </view>
+
+    <view class="login-buttons">
+      <!-- WeChat Login Button -->
+      <button 
+        class="login-btn primary" 
+        bindtap="performWxLogin"
+        loading="{{loading}}"
+        wx:if="{{!hasUserInfo && !loading}}"
+      >
+        微信登录
+      </button>
+
+      
+      <!-- Enter App Button -->
+      <button 
+        class="login-btn success" 
+        bindtap="enterApp"
+        wx:if="{{hasUserInfo}}"
+      >
+        进入应用
+      </button>
+
+      <!-- Loading State -->
+      <view class="loading-state" wx:if="{{loading}}">
+        <text class="loading-text">正在登录中...</text>
+      </view>
+    </view>
+
+    <!-- User Profile Section -->
+    <view class="user-profile" wx:if="{{hasUserInfo}}">
+      <view class="profile-section">
+        <!-- Avatar (New WeChat API) -->
+        <button 
+          class="avatar-wrapper" 
+          open-type="chooseAvatar" 
+          bind:chooseavatar="onChooseAvatar"
+          wx:if="{{canIUseNicknameComp}}"
+        >
+          <image class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
+          <text class="avatar-tip">点击更换头像</text>
+        </button>
+
+        <!-- Nickname Input (New WeChat API) -->
+        <view class="nickname-section">
+          <input 
+            class="nickname-input" 
+            type="nickname" 
+            placeholder="请输入昵称" 
+            value="{{userInfo.nickName}}"
+            bindinput="onNicknameInput"
+            wx:if="{{canIUseNicknameComp}}"
+          />
+          <text class="welcome-text" wx:else>欢迎，{{userInfo.nickName}}</text>
+        </view>
+      </view>
+
+      <!-- Logout Option -->
+      <button class="logout-btn" bindtap="logout">退出登录</button>
+    </view>
+  </view>
+
+  <view class="footer">
+    <text class="footer-text">© 2025 智能识别系统</text>
+  </view>
+</view>
