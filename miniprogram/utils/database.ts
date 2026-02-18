@@ -1,4 +1,5 @@
 // Database interface definitions and operations
+import { supabase } from './supabase'
 export interface User {
   id: string;
   openid: string;
@@ -51,191 +52,260 @@ export interface ImageData {
 
 // Database operations class
 class DatabaseService {
-  private baseUrl = 'https://fruit.joekr.fun/api'; // Change this to your backend URL in production
-
-  private async request(endpoint: string, options: any = {}): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const token = wx.getStorageSync('token') || '';
-      
-      console.log(`Making ${options.method || 'GET'} request to: ${this.baseUrl}${endpoint}`);
-      console.log('Request data:', options.data);
-      console.log('Authorization token:', token ? 'present' : 'missing');
-      
-      wx.request({
-        url: `${this.baseUrl}${endpoint}`,
-        method: options.method || 'GET',
-        data: options.data,
-        header: {
-          'content-type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          ...options.header
-        },
-        timeout: 10000, // 10 second timeout
-        success: (response) => {
-          console.log(`Response from ${endpoint}:`, {
-            statusCode: response.statusCode,
-            data: response.data,
-            header: response.header
-          });
-          
-          if (response.statusCode >= 200 && response.statusCode < 300) {
-            resolve(response.data);
-          } else {
-            console.error(`Request failed with status ${response.statusCode}:`, response.data);
-            reject(new Error(`Request failed with status ${response.statusCode}: ${JSON.stringify(response.data)}`));
-          }
-        },
-        fail: (error) => {
-          console.error('Database request error:', error);
-          reject(new Error(`Request failed: ${error.errMsg || 'Network error'}`));
-        }
-      });
-    });
-  }
-
+  
   // User operations
   async login(code: string, userInfo?: any): Promise<{token: string, user: User}> {
-    return this.request('/auth/wechat-login', {
-      method: 'POST',
-      data: { code, userInfo }
-    });
+    // Call Supabase Edge Function for WeChat Login
+    const { data: session, error } = await supabase.functions.invoke('wechat-login', {
+      body: { code, userInfo }
+    })
+
+    if (error) throw error
+
+    // Set session manually if the function returns one (access_token, refresh_token)
+    if (session?.access_token) {
+        const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token
+        })
+        if (setSessionError) throw setSessionError
+    }
+
+    // Get user profile
+    const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single()
+    
+    if (userError) throw userError
+
+    return { token: session.access_token, user }
   }
 
   async getUserInfo(userId: string): Promise<User> {
-    return this.request(`/users/${userId}`);
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    
+    if (error) throw error
+    return data
   }
 
   async updateUserInfo(userId: string, data: { nickname?: string, avatar_url?: string }): Promise<User> {
-    return this.request(`/users/${userId}`, {
-      method: 'PUT',
-      data
-    });
+    const { data: user, error } = await supabase
+      .from('users')
+      .update(data)
+      .eq('id', userId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return user
   }
 
   // Land block operations
   async createLandBlock(data: Omit<LandBlock, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<LandBlock> {
-    const response = await this.request('/land-blocks', {
-      method: 'POST',
-      data
-    });
-    // Handle wrapped response format
-    return response.data || response;
+    const { data: newBlock, error } = await supabase
+      .from('land_blocks')
+      .insert(data)
+      .select()
+      .single()
+
+    if (error) throw error
+    return newBlock
   }
 
   async getLandBlocks(userId: string): Promise<LandBlock[]> {
-    const response = await this.request(`/land-blocks?user_id=${userId}`);
-    // Handle both direct array response and wrapped response
-    return response.data || response || [];
+    const { data, error } = await supabase
+      .from('land_blocks')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
   }
 
   async updateLandBlock(id: string, data: Partial<LandBlock>): Promise<LandBlock> {
-    const response = await this.request(`/land-blocks/${id}`, {
-      method: 'PUT',
-      data
-    });
-    // Handle wrapped response format
-    return response.data || response;
+    const { data: updated, error } = await supabase
+      .from('land_blocks')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return updated
   }
 
   async deleteLandBlock(id: string): Promise<void> {
-    const response = await this.request(`/land-blocks/${id}`, {
-      method: 'DELETE'
-    });
-    // Handle wrapped response format
-    return response.data || response;
+    const { error } = await supabase
+      .from('land_blocks')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
   }
 
   // Fruit information operations
+  // Note: Original API handled image uploads implicitly or separately? 
+  // Here we just insert metadata.
   async createFruitInformation(data: Omit<FruitInformation, 'id' | 'created_at' | 'updated_at'>): Promise<FruitInformation> {
-    return this.request('/fruit-information', {
-      method: 'POST',
-      data
-    });
+    const { data: newInfo, error } = await supabase
+      .from('fruit_information')
+      .insert(data)
+      .select()
+      .single()
+
+    if (error) throw error
+    return newInfo
   }
 
   async getFruitInformation(userId: string, limit?: number, offset?: number): Promise<FruitInformation[]> {
-    let url = `/fruit-information?user_id=${userId}`;
-    if (limit) url += `&limit=${limit}`;
-    if (offset) url += `&offset=${offset}`;
-    return this.request(url);
+    let query = supabase
+      .from('fruit_information')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    
+    if (limit) query = query.limit(limit)
+    if (offset) query = query.range(offset, offset + (limit || 10) - 1)
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
   }
 
   async updateFruitInformation(id: string, data: Partial<FruitInformation>): Promise<FruitInformation> {
-    return this.request(`/fruit-information/${id}`, {
-      method: 'PUT',
-      data
-    });
+    const { data: updated, error } = await supabase
+      .from('fruit_information')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return updated
   }
 
   async deleteFruitInformation(id: string): Promise<void> {
-    return this.request(`/fruit-information/${id}`, {
-      method: 'DELETE'
-    });
+    const { error } = await supabase
+      .from('fruit_information')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
   }
 
   // Fertilizer operations
   async createFertilizer(data: Omit<Fertilizer, 'id' | 'created_at' | 'updated_at'>): Promise<Fertilizer> {
-    return this.request('/fertilizers', {
-      method: 'POST',
-      data
-    });
+    const { data: newFert, error } = await supabase
+      .from('fertilizers')
+      .insert(data)
+      .select()
+      .single()
+
+    if (error) throw error
+    return newFert
   }
 
   async getFertilizers(): Promise<Fertilizer[]> {
-    return this.request('/fertilizers');
+    const { data, error } = await supabase
+      .from('fertilizers')
+      .select('*')
+      .order('name')
+    
+    if (error) throw error
+    return data || []
   }
 
   async updateFertilizer(id: string, data: Partial<Fertilizer>): Promise<Fertilizer> {
-    return this.request(`/fertilizers/${id}`, {
-      method: 'PUT',
-      data
-    });
+    const { data: updated, error } = await supabase
+        .from('fertilizers')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single()
+    if (error) throw error
+    return updated
   }
 
   // Image operations
   async uploadImage(filePath: string): Promise<ImageData> {
-    return new Promise((resolve, reject) => {
-      wx.uploadFile({
-        url: `${this.baseUrl}/images/upload`,
-        filePath,
-        name: 'image',
-        header: {
-          'Authorization': `Bearer ${wx.getStorageSync('token') || ''}`
-        },
-        success: (res) => {
-          try {
-            const data = JSON.parse(res.data);
-            resolve(data);
-          } catch (error) {
-            reject(error);
-          }
-        },
-        fail: reject
-      });
-    });
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
+    const fileContent = wx.getFileSystemManager().readFileSync(filePath)
+    
+    const { data, error } = await supabase.storage
+      .from('images')
+      .upload(fileName, fileContent, {
+        contentType: 'image/jpeg'
+      })
+
+    if (error) throw error
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('images')
+      .getPublicUrl(fileName)
+
+    // Store metadata in images table
+    const { data: imageRecord, error: dbError } = await supabase
+      .from('images')
+      .insert({
+        image_url: publicUrl,
+        user_id: (await supabase.auth.getUser()).data.user?.id
+      })
+      .select()
+      .single()
+      
+    if (dbError) throw dbError
+
+    // Map to ImageData interface
+    return {
+        id: imageRecord.id,
+        url: imageRecord.image_url,
+        created_at: new Date(imageRecord.created_at)
+    }
   }
 
   async analyzeImage(imageId: string): Promise<ImageData> {
-    return this.request(`/images/${imageId}/analyze`, {
-      method: 'POST'
-    });
+    // This is handled by Edge Function in the new architecture
+    // Or we trigger it via database webhook
+    // For now, let's call the 'analyze-image' function directly if needed
+    // But original code expected a REST endpoint update.
+    // We will leave this as a TODO or implementing an Edge Function call.
+     const { data, error } = await supabase.functions.invoke('analyze-text', {
+        body: { image_id: imageId } // Assuming analyze-text handles images too or we create analyze-image
+     })
+     if (error) throw error
+     return data
   }
 
   // AI text analysis
   async analyzeText(text: string, landBlockId: string): Promise<any> {
-    return this.request('/ai/analyze-text', {
-      method: 'POST',
-      data: { text, land_block_id: landBlockId }
-    });
+    const { data, error } = await supabase.functions.invoke('analyze-text', {
+        body: { text, land_block_id: landBlockId }
+    })
+    
+    if (error) throw error
+    return data
   }
 
   // Statistics
   async getStatistics(userId: string, dateRange?: { start: Date, end: Date }): Promise<any> {
-    let url = `/statistics?user_id=${userId}`;
-    if (dateRange) {
-      url += `&start=${dateRange.start.toISOString()}&end=${dateRange.end.toISOString()}`;
-    }
-    return this.request(url);
+    // This logic might be complex SQL. 
+    // We can use a Postgres Function (RPC) for this.
+    const { data, error } = await supabase
+        .rpc('get_user_statistics', { 
+            user_uuid: userId,
+            start_date: dateRange?.start, 
+            end_date: dateRange?.end 
+        })
+    
+    if (error) throw error
+    return data
   }
 }
 

@@ -8,6 +8,7 @@
   "author": "",
   "license": "",
   "dependencies": {
+    "supabase-wechat-stable": "^2.1.2"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^2.8.3-1"
