@@ -3,26 +3,47 @@
   <view class="header">
     <view class="app-icon">🌾</view>
     <text class="title">创建账号</text>
-    <text class="subtitle">请填写您的个人信息完成注册</text>
+    <text class="subtitle">{{phoneRequired ? '请先授权获取昵称与手机号后完成注册' : '请先授权获取昵称后完成注册，手机号为可选项'}}</text>
   </view>
 
   <!-- Form Card -->
   <view class="form-card">
 
-    <!-- Name -->
+    <!-- WeChat Nickname -->
     <view class="form-group">
-      <text class="label">您的名字 <text class="required">*</text></text>
-      <input
-        class="input {{!nickname && submitAttempted ? 'input-error' : ''}}"
-        placeholder="请输入您的姓名或昵称"
-        placeholder-class="input-placeholder"
-        value="{{nickname}}"
-        bindinput="onInputNickname"
-        maxlength="20"
+      <text class="label">微信昵称 <text class="required">*</text></text>
+      <button
+        wx:if="{{!profileAuthorized}}"
+        class="btn-auth"
+        bindtap="onGetProfile"
         disabled="{{loading}}"
-        focus="{{true}}"
-      />
-      <text class="field-hint" wx:if="{{!nickname && submitAttempted}}">*名字不能为空</text>
+      >
+        授权获取昵称
+      </button>
+      <view wx:else class="readonly-box {{!nickname && submitAttempted ? 'input-error' : ''}}">
+        <text class="readonly-text">{{nickname}}</text>
+      </view>
+      <text class="field-hint" wx:if="{{!nickname && submitAttempted}}">*请先授权获取昵称</text>
+    </view>
+
+    <view class="divider"></view>
+
+    <!-- WeChat Phone Number -->
+    <view class="form-group">
+      <text class="label">手机号 <text wx:if="{{phoneRequired}}" class="required">*</text><text wx:else class="optional">（可选）</text></text>
+      <button
+        wx:if="{{!phoneAuthorized}}"
+        class="btn-auth"
+        open-type="getPhoneNumber"
+        bindgetphonenumber="onGetPhoneNumber"
+        disabled="{{loading}}"
+      >
+        授权获取手机号
+      </button>
+      <view wx:else class="readonly-box {{phoneRequired && !phoneNumber && submitAttempted ? 'input-error' : ''}}">
+        <text class="readonly-text">{{maskedPhoneNumber || phoneNumber}}</text>
+      </view>
+      <text class="field-hint" wx:if="{{phoneRequired && !phoneNumber && submitAttempted}}">*请先授权获取手机号</text>
     </view>
 
     <view class="divider"></view>

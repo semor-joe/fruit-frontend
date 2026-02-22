@@ -16,7 +16,7 @@ Page({
     // Check if user is already logged in
     const userInfo = wx.getStorageSync('userInfo');
     const token = wx.getStorageSync('token');
-    
+
     if (userInfo && token) {
       this.setData({
         hasUserInfo: true,
@@ -29,7 +29,7 @@ Page({
   // Demo mode for testing without backend
   useDemoMode(wxCode?: string) {
     console.log('Using demo mode with WeChat code:', wxCode);
-    
+
     // Generate demo user data
     const demoUser = {
       id: `demo_user_${Date.now()}`,
@@ -37,9 +37,9 @@ Page({
       nickname: '演示用户',
       avatar_url: 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'
     };
-    
+
     const demoToken = `demo_token_${Date.now()}`;
-    
+
     // Store demo data
     wx.setStorageSync('token', demoToken);
     wx.setStorageSync('userId', demoUser.id);
@@ -47,7 +47,7 @@ Page({
       nickName: demoUser.nickname,
       avatarUrl: demoUser.avatar_url
     });
-    
+
     this.setData({
       hasUserInfo: true,
       userInfo: {
@@ -56,12 +56,12 @@ Page({
       },
       loading: false
     });
-    
+
     wx.showToast({
       title: '演示模式登录成功',
       icon: 'success'
     });
-    
+
     // Show success, user can manually navigate
     this.setData({ loading: false });
   },
@@ -81,39 +81,48 @@ Page({
       // not here in the login flow. User profile can be collected separately.
 
       // Step 2: Send code to backend for authentication
-      const loginData = await db.login(loginRes.code);
-      console.log('Backend login response:', loginData);
-      
+      let loginData: any = null;
+      try {
+        loginData = await db.login(loginRes.code);
+        console.log('Backend login response:', loginData);
+      } catch (error) {
+        console.error('Backend login failed, redirecting to register:', error);
+        this.setData({ loading: false });
+        wx.navigateTo({ url: '/pages/register/register' });
+        return;
+      }
       // Validate response structure
       if (!loginData || typeof loginData !== 'object') {
         throw new Error('Invalid response from server');
       }
 
       // New user — must register with an invitation code first
-      if ((loginData as any).is_new_user === true) {
+      if ('is_new_user' in loginData && loginData.is_new_user === true) {
         this.setData({ loading: false });
         wx.navigateTo({ url: '/pages/register/register' });
         return;
       }
-      
-      if (!loginData.token) {
+
+      const authData = loginData as { token: string; user: { id: string; nickname?: string; avatar_url?: string } };
+
+      if (!authData.token) {
         throw new Error('No token received from server');
       }
-      
-      if (!loginData.user || !loginData.user.id) {
+
+      if (!authData.user || !authData.user.id) {
         throw new Error('Invalid user data received from server');
       }
-      
+
       // Step 3: Store authentication data
-      wx.setStorageSync('token', loginData.token);
-      wx.setStorageSync('supabase_token', loginData.token); // Used by callSupabaseRest
-      wx.setStorageSync('userId', loginData.user.id);
-      
+      wx.setStorageSync('token', authData.token);
+      wx.setStorageSync('supabase_token', authData.token); // Used by callSupabaseRest
+      wx.setStorageSync('userId', authData.user.id);
+
       // Update user info if available from backend
-      if (loginData.user.nickname && loginData.user.avatar_url) {
+      if (authData.user.nickname && authData.user.avatar_url) {
         const userInfo = {
-          nickName: loginData.user.nickname,
-          avatarUrl: loginData.user.avatar_url
+          nickName: authData.user.nickname,
+          avatarUrl: authData.user.avatar_url
         };
         wx.setStorageSync('userInfo', userInfo);
         this.setData({
@@ -138,15 +147,7 @@ Page({
     } catch (error: any) {
       console.error('WeChat login failed:', error);
       this.setData({ loading: false });
-      
-      // Check if it's a backend connection error
-      if (error.message && (error.message.includes('Request failed') || error.message.includes('网络'))) {
-        // Backend not available - use demo mode
-        console.log('Backend not available, using demo mode');
-        this.useDemoMode(loginRes?.code);
-        return;
-      }
-      
+
       wx.showModal({
         title: '登录失败',
         content: `登录出错: ${error.message || '未知错误'}`,
@@ -200,7 +201,7 @@ Page({
     } catch (error: any) {
       console.error('Get user profile failed:', error);
       this.setData({ loading: false });
-      
+
       if (error?.errMsg && error.errMsg.includes('cancel')) {
         wx.showToast({
           title: '用户取消授权',
@@ -213,15 +214,15 @@ Page({
   // Handle avatar selection (new WeChat feature)
   async onChooseAvatar(e: any) {
     const { avatarUrl } = e.detail;
-    
+
     try {
       // Upload avatar to your server here if needed
       const userInfo = { ...this.data.userInfo, avatarUrl };
-      
+
       await this.updateUserProfile(userInfo);
-      
+
       wx.setStorageSync('userInfo', userInfo);
-      this.setData({ 
+      this.setData({
         userInfo,
         hasUserInfo: !!userInfo.nickName && !!avatarUrl
       });
@@ -234,14 +235,14 @@ Page({
   // Handle nickname input (new WeChat feature)
   async onNicknameInput(e: any) {
     const nickName = e.detail.value;
-    
+
     try {
       const userInfo = { ...this.data.userInfo, nickName };
-      
+
       await this.updateUserProfile(userInfo);
-      
+
       wx.setStorageSync('userInfo', userInfo);
-      this.setData({ 
+      this.setData({
         userInfo,
         hasUserInfo: !!nickName && !!userInfo.avatarUrl
       });
@@ -311,7 +312,7 @@ Page({
         nickName: ''
       }
     });
-    
+
     wx.showToast({
       title: '已退出登录',
       icon: 'success'

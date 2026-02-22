@@ -75,39 +75,19 @@ export interface ImageData {
   created_at: Date;
 }
 
-/** Upsert a row in the public users table so foreign key constraints are satisfied.
- *  Returns the confirmed row from the database. */
-async function ensureUserRow(user: Partial<User>): Promise<User> {
-  try {
-    const existing = await callSupabaseRest('users', 'GET', undefined, `id=eq.${user.id}&select=*`)
-    if (existing && existing.length > 0) {
-      console.log('[DB] User row already exists:', existing[0])
-      return existing[0]
-    }
-    // Row does not exist — insert it
-    const created = await callSupabaseRest('users', 'POST', {
-      id: user.id,
-      openid: user.openid || '',
-      nickname: user.nickname || '',
-      avatar_url: user.avatar_url || ''
-    }, 'select=*')
-    if (!created || created.length === 0) {
-      throw new Error('Insert returned no data')
-    }
-    console.log('[DB] User row created successfully:', created[0])
-    return created[0]
-  } catch (e) {
-    console.error('[DB] ensureUserRow failed:', e)
-    const message = (e as any)?.message || ''
-    if (message.includes('row-level security') || message.includes('RLS') || message.includes('HTTP 403')) {
-      throw new Error('数据库权限策略未配置：请在 Supabase 为 users 表添加 INSERT policy')
-    }
-    throw new Error('Failed to create user profile. Please try again.')
-  }
-}
-
 // Database operations class
 class DatabaseService {
+  async getWechatPhoneNumber(phoneCode: string): Promise<string> {
+    const result = await callSupabaseFunction('wechat-login', {
+      action: 'get_phone_number',
+      phoneCode
+    })
+
+    const phoneNumber = result?.phoneNumber || result?.phone_info?.phoneNumber
+    if (!phoneNumber) throw new Error('Failed to get phone number from WeChat')
+    return phoneNumber
+  }
+
   
   // User operations
   async login(code: string, userInfo?: any): Promise<{token: string, user: User} | {is_new_user: true}> {
@@ -124,7 +104,7 @@ class DatabaseService {
     console.log('Edge function result:', result)
 
     // Explicit new-user signal from updated edge function
-    if (result && result.is_new_user) {
+    if (!result.user) {
       return { is_new_user: true }
     }
 
@@ -160,24 +140,19 @@ class DatabaseService {
     wx.setStorageSync('supabase_user', user)
     wx.setStorageSync('userId', user.id)
 
-    // Ensure the public users table row exists (required for FK constraints)
-    // Non-fatal on login — row likely already exists; RLS may block re-insert
-    try {
-      const confirmedUser = await ensureUserRow(user)
-      wx.setStorageSync('supabase_user', confirmedUser)
-      return { token, user: confirmedUser }
-    } catch (e) {
-      console.warn('[DB] ensureUserRow skipped on login (row likely exists):', e)
-      return { token, user }
-    }
+    return { token, user }
   }
 
   // Registration with invitation code (new users only)
-  async register(code: string, invitationCode: string, nickname?: string): Promise<{token: string, user: User}> {
+  async register(code: string, invitationCode: string, nickname?: string, phoneNumber?: string, avatarUrl?: string): Promise<{token: string, user: User}> {
     const result = await callSupabaseFunction('wechat-login', {
       code,
       invitationCode,
-      userInfo: nickname ? { nickName: nickname } : undefined
+      userInfo: {
+        ...(nickname ? { nickName: nickname } : {}),
+        ...(phoneNumber ? { phoneNumber } : {}),
+        ...(avatarUrl ? { avatarUrl } : {})
+      }
     })
 
     if (result && result.is_new_user === true) {
@@ -199,24 +174,34 @@ class DatabaseService {
         nickname: jwtPayload.user_metadata?.nickName || nickname || '',
         openid: jwtPayload.user_metadata?.openid || '',
         avatar_url: jwtPayload.user_metadata?.avatarUrl || '',
+        phone_number: jwtPayload.user_metadata?.phoneNumber || phoneNumber || '',
         created_at: new Date(),
         updated_at: new Date()
       } as User
     }
 
+    // Prefer current authorized values to avoid stale nickname/phone from backend payload
+    if (nickname) user.nickname = nickname
+    if (phoneNumber) user.phone_number = phoneNumber
+    if (avatarUrl) user.avatar_url = avatarUrl
+
     wx.setStorageSync('supabase_token', token)
     wx.setStorageSync('supabase_user', user)
     wx.setStorageSync('userId', user.id)
 
-    // Ensure the public users table row exists (required for FK constraints)
-    // and verify it was persisted by reading back the confirmed row
-    const confirmedUser = await ensureUserRow(user)
-    console.log('[DB] Registration complete — confirmed user in DB:', confirmedUser)
+    console.log('[DB] Registration complete — user returned from server:', user)
 
-    // Update stored user with the confirmed DB row (may have extra fields like created_at)
-    wx.setStorageSync('supabase_user', confirmedUser)
+    const profileCheck = await callSupabaseRest('users', 'GET', undefined, `id=eq.${user.id}&select=id`)
+    if (!profileCheck || profileCheck.length === 0) {
+      throw new Error('注册未完成：用户资料未写入数据库，请重试')
+    }
 
-    return { token, user: confirmedUser }
+    const invitationUsage = result?.invitation_usage
+    if (invitationUsage && invitationUsage.use_count > invitationUsage.max_uses) {
+      throw new Error('邀请码已达到使用上限')
+    }
+
+    return { token, user }
   }
 
   async getUserInfo(userId: string): Promise<User> {
@@ -244,9 +229,17 @@ class DatabaseService {
       user_id: userId
     }
     
-    const result = await callSupabaseRest('land_blocks', 'POST', landBlockData, 'select=*')
-    if (!result || result.length === 0) throw new Error('Failed to create land block')
-    return result[0]
+    try {
+      const result = await callSupabaseRest('land_blocks', 'POST', landBlockData, 'select=*')
+      if (!result || result.length === 0) throw new Error('Failed to create land block')
+      return result[0]
+    } catch (error: any) {
+      const message = error?.message || ''
+      if (message.includes('land_blocks_user_id_fkey')) {
+        throw new Error('用户资料不存在，请重新登录或重新注册后再试')
+      }
+      throw error
+    }
   }
 
   async getLandBlocks(userId: string): Promise<LandBlock[]> {
