@@ -7,9 +7,14 @@ create table public.users (
   openid text unique,
   nickname text,
   avatar_url text,
+  phone_number text,  -- optional contact number
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Migration for existing databases: add phone_number if the table already exists
+-- Run this if you already have the users table and want to add the column:
+--   alter table public.users add column if not exists phone_number text;
 
 -- Create land_blocks table
 create table public.land_blocks (
@@ -71,6 +76,9 @@ alter table public.images enable row level security;
 -- Users can only read/update their own profile
 create policy "Users can view own profile" on public.users
   for select using (auth.uid() = id);
+
+create policy "Users can insert own profile" on public.users
+  for insert with check (auth.uid() = id);
 
 create policy "Users can update own profile" on public.users
   for update using (auth.uid() = id);

@@ -53,9 +53,13 @@ miniprogram/
 ├── app.ts                   # 应用入口
 ├── app.wxss                 # 全局样式
 ├── pages/
-│   ├── login/              # 登录页面
+│   ├── login/              # WeChat 登录页（检测新用户 / 老用户）
+│   ├── register/           # 新用户注册页（输入邀请码）
 │   ├── add-content/        # 添加内容页面
 │   ├── check-content/      # 查看内容页面
+│   ├── content-detail/     # 记录详情页面
+│   ├── content-edit/       # 编辑记录页面
+│   ├── manage-landblocks/  # 地块管理页面
 │   ├── statistics/         # 统计页面
 │   └── index/              # 首页（重定向）
 ├── utils/
@@ -104,30 +108,86 @@ miniprogram/
 用户输入 → 后端AI服务 → 信息提取 → 结构化数据 → 返回前端展示
 ```
 
+## 邀请码管理 (Invitation Codes)
+
+只有持有邀请码的用户才能完成注册，已注册的老用户正常登录不受影响。
+
+### 初始化
+
+在 Supabase SQL Editor 中依次运行：
+1. `backend/db_schema.sql`（主数据表）
+2. `backend/invitation_codes_schema.sql`（邀请码表 + 工具函数）
+
+### 生成邀请码（SQL Editor 中执行）
+
+```sql
+-- 生成 5 个随机单次使用邀请码：
+select * from create_invitation_codes(5, 'Initial beta users');
+
+-- 生成 1 个可供 50 人使用、30 天后过期的邀请码：
+select * from create_invitation_codes(1, 'Team signup link', 50, 30);
+
+-- 创建指定邀请码：
+insert into invitation_codes (code, note, max_uses)
+values ('FARM2026', 'Joe personal code', 1);
+
+-- 查看所有邀请码状态：
+select code, note, use_count, max_uses, is_active, expires_at
+from invitation_codes order by created_at desc;
+```
+
+### 注册流程
+
+```
+新用户打开小程序
+  → 点击「微信登录」
+  → wx.login() code 发送到 wechat-login（不带邀请码）
+  → 后端检测到新 openid → 返回 { is_new_user: true }
+  → 跳转到「注册页面」
+  → 用户填写邀请码和昵称
+  → 点击「完成注册」
+  → 重新获取 wx.login() code + 邀请码一起发送到 wechat-login
+  → 后端校验邀请码 → 创建用户 → 标记邀请码已使用 → 返回 JWT
+  → 存储 token → 进入主应用
+
+老用户打开小程序
+  → 点击「微信登录」→ 直接返回 JWT → 进入主应用（无需邀请码）
+```
+
+---
+
 ## 部署说明
 
 ### 小程序发布
 1. 在微信公众平台注册小程序
-2. 配置服务器域名
+2. 配置服务器域名（添加 `https://<project-ref>.supabase.co`）
 3. 上传代码审核
 4. 发布上线
 
-### 后端部署
-1. 部署后端服务到云服务器
-2. 配置数据库连接
-3. 集成AI服务接口
-4. 配置文件存储服务
-5. 设置环境变量
+### 后端部署（Supabase）
+1. 按照上方步骤创建 Supabase 项目
+2. 运行 `db_schema.sql` 和 `invitation_codes_schema.sql`
+3. 配置 Storage bucket `images`
+4. 部署 Edge Functions：`wechat-login`、`analyze-text`
+5. 设置 Edge Function 环境变量（Secrets）
 
-## 环境变量配置
+## 环境变量配置（Edge Function Secrets）
 
-创建 `.env` 文件：
-```env
-WECHAT_APP_ID=your_wechat_app_id
-WECHAT_APP_SECRET=your_wechat_app_secret
-DATABASE_URL=your_database_url
-AI_API_KEY=your_ai_api_key
-JWT_SECRET=your_jwt_secret
+在 Supabase 控制台 **Edge Functions → Secrets** 或通过 CLI 设置：
+
+```bash
+supabase secrets set WECHAT_APP_ID=your_wechat_appid
+supabase secrets set WECHAT_APP_SECRET=your_wechat_appsecret
+supabase secrets set SUPABASE_URL=https://<project-ref>.supabase.co
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+# 可选：真实 AI 分析
+supabase secrets set OPENAI_API_KEY=sk-...
+```
+
+前端配置（`miniprogram/utils/supabase/client.ts`）：
+```typescript
+const SUPABASE_URL = 'https://<project-ref>.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJ...'  // anon 公开密钥，非 service_role
 ```
 
 ## 开发注意事项

@@ -88,6 +88,13 @@ Page({
       if (!loginData || typeof loginData !== 'object') {
         throw new Error('Invalid response from server');
       }
+
+      // New user — must register with an invitation code first
+      if ((loginData as any).is_new_user === true) {
+        this.setData({ loading: false });
+        wx.navigateTo({ url: '/pages/register/register' });
+        return;
+      }
       
       if (!loginData.token) {
         throw new Error('No token received from server');
@@ -287,6 +294,11 @@ Page({
   // Quick login without user info (just wx.login)
   async quickLogin() {
     this.performWxLogin();
+  },
+
+  // Navigate to registration page
+  goToRegister() {
+    wx.navigateTo({ url: '/pages/register/register' });
   },
 
   // Force logout

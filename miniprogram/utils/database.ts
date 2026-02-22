@@ -1,10 +1,35 @@
 // Database interface definitions and operations
 import { callSupabaseFunction, callSupabaseRest } from './supabase/client'
+
+/** Decode the payload section of a JWT without any crypto verification */
+function decodeJwtPayload(token: string): any {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    const padded = base64 + '='.repeat((4 - base64.length % 4) % 4)
+    let bytes = ''
+    for (let i = 0; i < padded.length; i += 4) {
+      const b0 = chars.indexOf(padded[i])
+      const b1 = chars.indexOf(padded[i + 1])
+      const b2 = chars.indexOf(padded[i + 2])
+      const b3 = chars.indexOf(padded[i + 3])
+      bytes += String.fromCharCode((b0 << 2) | (b1 >> 4))
+      if (padded[i + 2] !== '=') bytes += String.fromCharCode(((b1 & 15) << 4) | (b2 >> 2))
+      if (padded[i + 3] !== '=') bytes += String.fromCharCode(((b2 & 3) << 6) | b3)
+    }
+    return JSON.parse(decodeURIComponent(escape(bytes)))
+  } catch (e) {
+    console.error('JWT decode failed:', e)
+    return null
+  }
+}
+
 export interface User {
   id: string;
   openid: string;
   nickname: string;
   avatar_url?: string;
+  phone_number?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -50,15 +75,46 @@ export interface ImageData {
   created_at: Date;
 }
 
+/** Upsert a row in the public users table so foreign key constraints are satisfied.
+ *  Returns the confirmed row from the database. */
+async function ensureUserRow(user: Partial<User>): Promise<User> {
+  try {
+    const existing = await callSupabaseRest('users', 'GET', undefined, `id=eq.${user.id}&select=*`)
+    if (existing && existing.length > 0) {
+      console.log('[DB] User row already exists:', existing[0])
+      return existing[0]
+    }
+    // Row does not exist — insert it
+    const created = await callSupabaseRest('users', 'POST', {
+      id: user.id,
+      openid: user.openid || '',
+      nickname: user.nickname || '',
+      avatar_url: user.avatar_url || ''
+    }, 'select=*')
+    if (!created || created.length === 0) {
+      throw new Error('Insert returned no data')
+    }
+    console.log('[DB] User row created successfully:', created[0])
+    return created[0]
+  } catch (e) {
+    console.error('[DB] ensureUserRow failed:', e)
+    const message = (e as any)?.message || ''
+    if (message.includes('row-level security') || message.includes('RLS') || message.includes('HTTP 403')) {
+      throw new Error('数据库权限策略未配置：请在 Supabase 为 users 表添加 INSERT policy')
+    }
+    throw new Error('Failed to create user profile. Please try again.')
+  }
+}
+
 // Database operations class
 class DatabaseService {
   
-  // User operations  
-  async login(code: string, userInfo?: any): Promise<{token: string, user: User}> {
+  // User operations
+  async login(code: string, userInfo?: any): Promise<{token: string, user: User} | {is_new_user: true}> {
     // Call Supabase Edge Function for WeChat Login
-    // According to WeChat docs: send code to server, server calls code2Session to get openid/session_key
-    const result = await callSupabaseFunction('wechat-login', { 
-      code, 
+    // Returns {is_new_user: true} if the WeChat account has never registered before
+    const result = await callSupabaseFunction('wechat-login', {
+      code,
       userInfo: userInfo ? {
         nickName: userInfo.nickName,
         avatarUrl: userInfo.avatarUrl
@@ -67,25 +123,100 @@ class DatabaseService {
 
     console.log('Edge function result:', result)
 
-    // Edge function returns sessionData.session + user separately
-    // session has: access_token, refresh_token, token_type, expires_in
-    // user comes from: sessionData.user (passed separately) or result.user
-    const token = result.access_token || result.session?.access_token
-    const user = result.user || result.session?.user
-    
-    if (!token) {
-      throw new Error('No access token received from server')
+    // Explicit new-user signal from updated edge function
+    if (result && result.is_new_user) {
+      return { is_new_user: true }
     }
-    
+
+    // Extract token and user — works for both the current and older edge function responses
+    const token = result.access_token || result.session?.access_token
+
+    if (!token) {
+      console.log('No token in response — treating as new user')
+      return { is_new_user: true }
+    }
+
+    let user = result.user || result.session?.user
+
+    // Edge function may return user: null — decode from JWT payload instead
     if (!user) {
-      throw new Error('No user data received from server')
+      const jwtPayload = decodeJwtPayload(token)
+      if (!jwtPayload?.sub) {
+        console.log('No user data in response — treating as new user')
+        return { is_new_user: true }
+      }
+      user = {
+        id: jwtPayload.sub,
+        nickname: jwtPayload.user_metadata?.nickName || '',
+        openid: jwtPayload.user_metadata?.openid || '',
+        avatar_url: jwtPayload.user_metadata?.avatarUrl || '',
+        created_at: new Date(),
+        updated_at: new Date()
+      } as User
     }
 
     // Store session in WeChat storage
     wx.setStorageSync('supabase_token', token)
     wx.setStorageSync('supabase_user', user)
+    wx.setStorageSync('userId', user.id)
 
-    return { token, user }
+    // Ensure the public users table row exists (required for FK constraints)
+    // Non-fatal on login — row likely already exists; RLS may block re-insert
+    try {
+      const confirmedUser = await ensureUserRow(user)
+      wx.setStorageSync('supabase_user', confirmedUser)
+      return { token, user: confirmedUser }
+    } catch (e) {
+      console.warn('[DB] ensureUserRow skipped on login (row likely exists):', e)
+      return { token, user }
+    }
+  }
+
+  // Registration with invitation code (new users only)
+  async register(code: string, invitationCode: string, nickname?: string): Promise<{token: string, user: User}> {
+    const result = await callSupabaseFunction('wechat-login', {
+      code,
+      invitationCode,
+      userInfo: nickname ? { nickName: nickname } : undefined
+    })
+
+    if (result && result.is_new_user === true) {
+      throw new Error('邀请码验证失败，请检查后重试')
+    }
+
+    const token = result.access_token || result.session?.access_token
+    if (!token) throw new Error('No access token received from server')
+
+    // Try all possible locations where user data might be nested
+    let user = result.user || result.session?.user || result.data?.user || result.data?.session?.user
+
+    if (!user) {
+      // Server returned null user — decode it from the JWT payload instead
+      const jwtPayload = decodeJwtPayload(token)
+      if (!jwtPayload?.sub) throw new Error('No user data received from server')
+      user = {
+        id: jwtPayload.sub,
+        nickname: jwtPayload.user_metadata?.nickName || nickname || '',
+        openid: jwtPayload.user_metadata?.openid || '',
+        avatar_url: jwtPayload.user_metadata?.avatarUrl || '',
+        created_at: new Date(),
+        updated_at: new Date()
+      } as User
+    }
+
+    wx.setStorageSync('supabase_token', token)
+    wx.setStorageSync('supabase_user', user)
+    wx.setStorageSync('userId', user.id)
+
+    // Ensure the public users table row exists (required for FK constraints)
+    // and verify it was persisted by reading back the confirmed row
+    const confirmedUser = await ensureUserRow(user)
+    console.log('[DB] Registration complete — confirmed user in DB:', confirmedUser)
+
+    // Update stored user with the confirmed DB row (may have extra fields like created_at)
+    wx.setStorageSync('supabase_user', confirmedUser)
+
+    return { token, user: confirmedUser }
   }
 
   async getUserInfo(userId: string): Promise<User> {
@@ -94,7 +225,7 @@ class DatabaseService {
     return data[0]
   }
 
-  async updateUserInfo(userId: string, updateData: { nickname?: string, avatar_url?: string }): Promise<User> {
+  async updateUserInfo(userId: string, updateData: { nickname?: string, avatar_url?: string, phone_number?: string }): Promise<User> {
     const result = await callSupabaseRest('users', 'PATCH', updateData, `id=eq.${userId}&select=*`)
     if (!result || result.length === 0) throw new Error('Failed to update user')
     return result[0]

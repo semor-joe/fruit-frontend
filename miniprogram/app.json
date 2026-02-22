@@ -8,6 +8,7 @@
     "pages/manage-landblocks/manage-landblocks",
     "pages/content-detail/content-detail",
     "pages/content-edit/content-edit",
+    "pages/register/register",
     "pages/logs/logs"
   ],
   "tabBar": {

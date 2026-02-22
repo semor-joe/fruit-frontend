@@ -32,7 +32,15 @@
         微信登录
       </button>
 
-      
+      <!-- Register Button -->
+      <button
+        class="login-btn register"
+        bindtap="goToRegister"
+        wx:if="{{!hasUserInfo && !loading}}"
+      >
+        注册账号
+      </button>
+
       <!-- Enter App Button -->
       <button 
         class="login-btn success" 

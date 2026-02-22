@@ -104,6 +104,13 @@
   margin-bottom: 20rpx;
 }
 
+.login-btn.register {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  border: 2rpx solid rgba(255, 255, 255, 0.5);
+  margin-top: 20rpx;
+}
+
 .loading-state {
   text-align: center;
   padding: 40rpx;

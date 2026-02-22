@@ -1,0 +1,66 @@
+<view class="page-container">
+  <!-- Header -->
+  <view class="header">
+    <view class="app-icon">🌾</view>
+    <text class="title">创建账号</text>
+    <text class="subtitle">请填写您的个人信息完成注册</text>
+  </view>
+
+  <!-- Form Card -->
+  <view class="form-card">
+
+    <!-- Name -->
+    <view class="form-group">
+      <text class="label">您的名字 <text class="required">*</text></text>
+      <input
+        class="input {{!nickname && submitAttempted ? 'input-error' : ''}}"
+        placeholder="请输入您的姓名或昵称"
+        placeholder-class="input-placeholder"
+        value="{{nickname}}"
+        bindinput="onInputNickname"
+        maxlength="20"
+        disabled="{{loading}}"
+        focus="{{true}}"
+      />
+      <text class="field-hint" wx:if="{{!nickname && submitAttempted}}">*名字不能为空</text>
+    </view>
+
+    <view class="divider"></view>
+
+    <!-- Invitation Code -->
+    <view class="form-group">
+      <text class="label">邀请码 <text class="required">*</text></text>
+      <input
+        class="input code-input {{!invitationCode && submitAttempted ? 'input-error' : ''}}"
+        placeholder="请输入邀请码"
+        placeholder-class="input-placeholder"
+        value="{{invitationCode}}"
+        bindinput="onInputCode"
+        maxlength="32"
+        disabled="{{loading}}"
+      />
+      <text class="field-hint" wx:if="{{!invitationCode && submitAttempted}}">*请输入邀请码</text>
+    </view>
+
+  </view>
+
+  <!-- Actions -->
+  <view class="actions">
+    <button
+      class="btn-register"
+      bindtap="onRegister"
+      loading="{{loading}}"
+      disabled="{{loading}}"
+    >
+      完成注册
+    </button>
+    <button class="btn-back" bindtap="onBack" disabled="{{loading}}">
+      返回登录
+    </button>
+  </view>
+
+  <!-- Note -->
+  <view class="note">
+    <text class="note-text">没有邀请码？请联系管理员获取</text>
+  </view>
+</view>
