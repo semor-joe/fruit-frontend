@@ -1,1 +1,6 @@
 fruit-backend/
+old_frontend_backend
+.vscode/launch.json
+.temp/
+.DS_Store
+node_modules/

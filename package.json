@@ -2,15 +2,16 @@
   "name": "miniprogram-ts-quickstart",
   "version": "1.0.0",
   "description": "",
-  "scripts": {
-  },
+  "scripts": {},
   "keywords": [],
   "author": "",
   "license": "",
   "dependencies": {
-    "supabase-wechat-stable": "^2.1.2"
+    "@supabase/supabase-js": "^2.39.0"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^2.8.3-1"
-  }
+  },
+  "type": "module"
 }
+

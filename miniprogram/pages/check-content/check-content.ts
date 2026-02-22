@@ -25,6 +25,9 @@ Page({
 
   onShow() {
     if (!this.checkLoginStatus()) return;
+    // Reload when returning from detail/edit pages
+    this.setData({ page: 1, hasMore: true, contentList: [] });
+    this.loadContent();
   },
 
   async onPullDownRefresh() {
@@ -207,12 +210,13 @@ Page({
     this.loadContent();
   },
 
-  onContentItemTap() {
-    // Navigate to detail page or show modal with more info
-    wx.showToast({
-      title: '功能开发中',
-      icon: 'none'
-    });
+  onContentItemTap(e: any) {
+    const id = e.currentTarget.dataset.id;
+    if (id) {
+      wx.navigateTo({
+        url: `/pages/content-detail/content-detail?id=${id}`
+      });
+    }
   },
 
   toggleAnalysis(e: any) {
@@ -231,27 +235,15 @@ Page({
   },
 
   editContent(e: any) {
-    e.stopPropagation();
     const id = e.currentTarget.dataset.id;
-    const content = this.data.contentList.find(item => item.id === id);
-    
-    if (content) {
-      const landBlockIndex = this.data.landBlocks.findIndex(
-        block => block.id === content.land_block_id
-      );
-      
-      this.setData({
-        showEditModal: true,
-        editingContent: {
-          ...content,
-          landBlockIndex: landBlockIndex >= 0 ? landBlockIndex : 0
-        }
+    if (id) {
+      wx.navigateTo({
+        url: `/pages/content-edit/content-edit?id=${id}`
       });
     }
   },
 
   async deleteContent(e: any) {
-    e.stopPropagation();
     const id = e.currentTarget.dataset.id;
     
     const result = await this.showConfirmDialog('确认删除', '删除后无法恢复，确认删除吗？');

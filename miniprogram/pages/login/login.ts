@@ -77,6 +77,9 @@ Page({
       loginRes = await this.wxLogin();
       console.log('WeChat login code:', loginRes.code);
 
+      // NOTE: wx.getUserProfile can ONLY be called from a direct user tap button,
+      // not here in the login flow. User profile can be collected separately.
+
       // Step 2: Send code to backend for authentication
       const loginData = await db.login(loginRes.code);
       console.log('Backend login response:', loginData);
@@ -96,6 +99,7 @@ Page({
       
       // Step 3: Store authentication data
       wx.setStorageSync('token', loginData.token);
+      wx.setStorageSync('supabase_token', loginData.token); // Used by callSupabaseRest
       wx.setStorageSync('userId', loginData.user.id);
       
       // Update user info if available from backend

@@ -59,38 +59,14 @@ Page({
         landBlocks: landBlocks || []
       });
       
-      // If no land blocks exist, show message to create one
-      if (!landBlocks || landBlocks.length === 0) {
-        wx.showModal({
-          title: '提示',
-          content: '您还没有地块，请先创建一个地块',
-          showCancel: false,
-          confirmText: '创建地块',
-          success: () => {
-            this.showAddLandBlockDialog();
-          }
-        });
-      }
+      // If no land blocks exist, show inline prompt instead of a modal popup
+      // User can tap '新增地块' button to create one
     } catch (error: any) {
       console.error('Failed to load land blocks:', error);
-      console.error('Error details:', {
-        message: error?.message || 'Unknown error',
-        stack: error?.stack
-      });
-      
-      wx.showModal({
-        title: '加载失败',
-        content: `加载地块失败: ${error?.message || '未知错误'}`,
-        showCancel: true,
-        cancelText: '重试',
-        confirmText: '创建地块',
-        success: (res) => {
-          if (res.confirm) {
-            this.showAddLandBlockDialog();
-          } else {
-            this.loadLandBlocks();
-          }
-        }
+      wx.showToast({
+        title: `加载地块失败: ${error?.message || '未知错误'}`,
+        icon: 'error',
+        duration: 2000
       });
     }
   },

@@ -274,16 +274,20 @@
 
 .form-input, .form-textarea {
   width: 100%;
-  padding: 16rpx;
+  padding: 24rpx;
   border: 1rpx solid #e0e0e0;
   border-radius: 8rpx;
-  font-size: 28rpx;
+  font-size: 30rpx;
   background-color: #fafafa;
   box-sizing: border-box;
 }
 
+.form-input {
+  height: 88rpx;
+}
+
 .form-textarea {
-  height: 120rpx;
+  height: 180rpx;
   resize: none;
 }
 

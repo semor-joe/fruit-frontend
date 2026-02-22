@@ -45,6 +45,7 @@
       wx:for="{{contentList}}" 
       wx:key="id"
       bindtap="onContentItemTap"
+      data-id="{{item.id}}"
       data-item="{{item}}"
     >
       <view class="content-header">
@@ -53,8 +54,8 @@
           <text class="content-date">{{item.created_at}}</text>
         </view>
         <view class="content-actions">
-          <text class="action-btn" bindtap="editContent" data-id="{{item.id}}">编辑</text>
-          <text class="action-btn delete" bindtap="deleteContent" data-id="{{item.id}}">删除</text>
+          <text class="action-btn" catchtap="editContent" data-id="{{item.id}}">编辑</text>
+          <text class="action-btn delete" catchtap="deleteContent" data-id="{{item.id}}">删除</text>
         </view>
       </view>
 
@@ -114,7 +115,7 @@
 
     <!-- Empty State -->
     <view class="empty-state" wx:if="{{contentList.length === 0 && !loading}}">
-      <image class="empty-image" src="/images/empty-content.png"></image>
+      <text class="empty-icon">🌱</text>
       <text class="empty-text">暂无内容</text>
       <text class="empty-subtitle">快去添加一些农业信息吧</text>
       <button class="empty-btn" bindtap="goToAddContent">添加内容</button>

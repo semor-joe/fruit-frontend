@@ -16,7 +16,6 @@
     "minified": true,
     "enhance": true,
     "showShadowRootInWxmlPanel": false,
-    "packNpmRelationList": [],
     "ignoreUploadUnusedFiles": true,
     "compileHotReLoad": false,
     "skylineRenderEnable": true,
@@ -24,24 +23,31 @@
     "compileWorklet": false,
     "uglifyFileName": true,
     "uploadWithSourceMap": true,
-    "packNpmManually": false,
+    "urlCheck": false,
     "minifyWXSS": true,
     "minifyWXML": true,
     "localPlugins": false,
     "condition": false,
     "swc": false,
     "disableSWC": true,
-    "disableUseStrict": false
+    "disableUseStrict": false,
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./package.json",
+        "miniprogramNpmDistDir": "./miniprogram/"
+      }
+    ]
   },
   "simulatorType": "wechat",
   "simulatorPluginLibVersion": {},
   "condition": {},
-  "srcMiniprogramRoot": "miniprogram/",
+  "srcMiniprogramRoot": "./miniprogram/",
   "editorSetting": {
     "tabIndent": "insertSpaces",
     "tabSize": 2
   },
-  "libVersion": "trial",
+  "libVersion": "3.10.2",
   "packOptions": {
     "ignore": [],
     "include": []

@@ -2,7 +2,11 @@
   <!-- Land Block Selection -->
   <view class="section">
     <view class="section-title">选择地块</view>
-    <picker 
+    <view wx:if="{{landBlocks.length === 0}}" class="empty-landblock-hint">
+      <text>暂无地块，请点击「新增地块」创建</text>
+    </view>
+    <picker
+      wx:else
       bindchange="onLandBlockChange" 
       value="{{landBlockIndex}}" 
       range="{{landBlocks}}" 
@@ -10,7 +14,7 @@
       class="picker"
     >
       <view class="picker-display">
-        <text>{{landBlocks.length > 0 && landBlocks[landBlockIndex] ? landBlocks[landBlockIndex].name : '请选择地块'}}</text>
+        <text>{{landBlocks[landBlockIndex] ? landBlocks[landBlockIndex].name : '请选择地块'}}</text>
         <text class="arrow">></text>
       </view>
     </picker>

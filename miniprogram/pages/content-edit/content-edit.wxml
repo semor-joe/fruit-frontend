@@ -1,0 +1,187 @@
+<!--pages/content-edit/content-edit.wxml-->
+<view class="container">
+  <!-- Header -->
+  <view class="header">
+    <view class="header-content">
+      <text class="header-icon">✏️</text>
+      <text class="header-title">编辑农业记录</text>
+    </view>
+  </view>
+
+  <!-- Content Image -->
+  <view class="image-section" wx:if="{{processedContent.img_url}}">
+    <image class="content-image" src="{{processedContent.img_url}}" mode="aspectFill" bindtap="previewImage"/>
+  </view>
+
+  <!-- Basic Info Grid -->
+  <view class="info-grid">
+    <view class="info-card crop-card">
+      <view class="card-header">
+        <text class="card-icon">🌱</text>
+        <text class="card-title">作物类型</text>
+      </view>
+      <input class="editable-input" placeholder="请输入作物类型" value="{{editableCropType}}" bindinput="onCropTypeInput"/>
+    </view>
+
+    <view class="info-card size-card">
+      <view class="card-header">
+        <text class="card-icon">📏</text>
+        <text class="card-title">果实直径</text>
+      </view>
+      <input class="editable-input" placeholder="如: 8.5cm" value="{{editableFruitSize}}" bindinput="onFruitSizeInput"/>
+    </view>
+  </view>
+
+  <!-- Description Section -->
+  <view class="content-section">
+    <view class="section-header">
+      <text class="section-icon">📝</text>
+      <text class="section-title">描述内容</text>
+    </view>
+    <textarea
+      class="description-textarea"
+      placeholder="请输入详细描述..."
+      value="{{processedContent.primary_description}}"
+      bindinput="onDescriptionInput"
+      auto-height
+    />
+  </view>
+
+  <!-- Land Block Selection -->
+  <view class="content-section">
+    <view class="section-header">
+      <text class="section-icon">📍</text>
+      <text class="section-title">地块选择</text>
+    </view>
+    <picker class="land-picker" bindchange="onLandBlockChange" value="{{selectedLandBlockIndex}}" range="{{landBlocks}}" range-key="name">
+      <view class="picker-display">
+        <text class="picker-text">{{landBlocks[selectedLandBlockIndex].name || '请选择地块'}}</text>
+        <text class="picker-arrow">›</text>
+      </view>
+    </picker>
+  </view>
+
+  <!-- Fertilizer Management -->
+  <view class="content-section fertilizer-section">
+    <view class="section-header-row">
+      <view class="section-header-left">
+        <text class="section-icon">🌿</text>
+        <text class="section-title">肥料管理</text>
+      </view>
+      <button class="add-fertilizer-btn" bindtap="showAddFertilizerDialog">
+        <text>+ 添加肥料</text>
+      </button>
+    </view>
+
+    <view class="fertilizer-list" wx:if="{{editingFertilizers.length > 0}}">
+      <view class="fertilizer-table">
+        <view class="table-header">
+          <text class="header-cell name-cell">肥料名称</text>
+          <text class="header-cell amount-cell">用量</text>
+          <text class="header-cell type-cell">类型</text>
+          <text class="header-cell action-cell">操作</text>
+        </view>
+        <view class="table-row" wx:for="{{editingFertilizers}}" wx:key="index">
+          <view class="table-cell name-cell"><text class="fertilizer-name">{{item.name}}</text></view>
+          <view class="table-cell amount-cell"><text>{{item.amount}}{{item.unit}}</text></view>
+          <view class="table-cell type-cell"><text>{{item.type || '通用'}}</text></view>
+          <view class="table-cell action-cell">
+            <text class="edit-btn" bindtap="editFertilizer" data-index="{{index}}">✏️</text>
+            <text class="delete-btn" bindtap="deleteFertilizer" data-index="{{index}}">🗑️</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty-fertilizer-state" wx:if="{{editingFertilizers.length === 0}}">
+      <text class="empty-fertilizer-text">暂无肥料记录</text>
+      <text class="empty-fertilizer-hint">点击上方按钮添加肥料信息</text>
+    </view>
+  </view>
+
+  <!-- Action Buttons -->
+  <view class="action-buttons">
+    <button class="action-btn cancel-btn" bindtap="cancelEdit">✕ 取消</button>
+    <button class="action-btn save-btn" bindtap="saveContent" loading="{{updating}}">💾 保存</button>
+  </view>
+</view>
+
+<!-- Add Fertilizer Dialog -->
+<view class="fertilizer-dialog-overlay" wx:if="{{showAddFertilizerDialog}}">
+  <view class="fertilizer-dialog-container" catchtap="">
+    <view class="fertilizer-dialog-header">
+      <text class="dialog-title">添加肥料</text>
+      <text class="dialog-close-btn" bindtap="hideAddFertilizerDialog">×</text>
+    </view>
+    <view class="fertilizer-dialog-body" catchtap="">
+      <view class="fertilizer-form-item">
+        <text class="form-label">肥料名称 *</text>
+        <input class="form-input" placeholder="请输入肥料名称" value="{{newFertilizer.name}}" bindinput="onFertilizerNameInput"/>
+      </view>
+      <view class="fertilizer-form-row">
+        <view class="fertilizer-form-item flex-1">
+          <text class="form-label">用量 *</text>
+          <input class="form-input" placeholder="请输入用量" type="digit" value="{{newFertilizer.amount}}" bindinput="onFertilizerAmountInput"/>
+        </view>
+        <view class="fertilizer-form-item flex-small">
+          <text class="form-label">单位</text>
+          <picker class="unit-picker" bindchange="onFertilizerUnitChange" range="{{['kg', 'g', 'L', 'ml']}}" catchtap="">
+            <view class="unit-picker-display" catchtap=""><text>{{newFertilizer.unit}}</text></view>
+          </picker>
+        </view>
+      </view>
+      <view class="fertilizer-form-item">
+        <text class="form-label">肥料类型</text>
+        <input class="form-input" placeholder="如：复合肥、有机肥等" value="{{newFertilizer.type}}" bindinput="onFertilizerTypeInput"/>
+      </view>
+      <view class="fertilizer-form-item">
+        <text class="form-label">NPK比例</text>
+        <input class="form-input" placeholder="如：20-10-10" value="{{newFertilizer.npk_ratio}}" bindinput="onFertilizerNPKInput"/>
+      </view>
+    </view>
+    <view class="fertilizer-dialog-footer">
+      <button class="dialog-btn cancel-btn" bindtap="hideAddFertilizerDialog">取消</button>
+      <button class="dialog-btn add-btn" bindtap="addFertilizer">添加肥料</button>
+    </view>
+  </view>
+</view>
+
+<!-- Edit Fertilizer Dialog -->
+<view class="fertilizer-dialog-overlay" wx:if="{{showEditFertilizerDialog}}">
+  <view class="fertilizer-dialog-container" catchtap="">
+    <view class="fertilizer-dialog-header">
+      <text class="dialog-title">编辑肥料</text>
+      <text class="dialog-close-btn" bindtap="hideEditFertilizerDialog">×</text>
+    </view>
+    <view class="fertilizer-dialog-body" catchtap="">
+      <view class="fertilizer-form-item">
+        <text class="form-label">肥料名称 *</text>
+        <input class="form-input" placeholder="请输入肥料名称" value="{{editingFertilizer.name}}" bindinput="onEditFertilizerNameInput"/>
+      </view>
+      <view class="fertilizer-form-row">
+        <view class="fertilizer-form-item flex-1">
+          <text class="form-label">用量 *</text>
+          <input class="form-input" placeholder="请输入用量" type="digit" value="{{editingFertilizer.amount}}" bindinput="onEditFertilizerAmountInput"/>
+        </view>
+        <view class="fertilizer-form-item flex-small">
+          <text class="form-label">单位</text>
+          <picker class="unit-picker" bindchange="onEditFertilizerUnitChange" range="{{['kg', 'g', 'L', 'ml']}}" catchtap="">
+            <view class="unit-picker-display" catchtap=""><text>{{editingFertilizer.unit}}</text></view>
+          </picker>
+        </view>
+      </view>
+      <view class="fertilizer-form-item">
+        <text class="form-label">肥料类型</text>
+        <input class="form-input" placeholder="如：复合肥、有机肥等" value="{{editingFertilizer.type}}" bindinput="onEditFertilizerTypeInput"/>
+      </view>
+      <view class="fertilizer-form-item">
+        <text class="form-label">NPK比例</text>
+        <input class="form-input" placeholder="如：20-10-10" value="{{editingFertilizer.npk_ratio}}" bindinput="onEditFertilizerNPKInput"/>
+      </view>
+    </view>
+    <view class="fertilizer-dialog-footer">
+      <button class="dialog-btn cancel-btn" bindtap="hideEditFertilizerDialog">取消</button>
+      <button class="dialog-btn add-btn" bindtap="saveFertilizerEdit">保存修改</button>
+    </view>
+  </view>
+</view>

@@ -198,7 +198,6 @@ Page({
     try {
       await db.deleteLandBlock(deletingLandBlock.id);
 
-      // Remove from local data
       const landBlocks = this.data.landBlocks.filter(
         block => block.id !== deletingLandBlock.id
       );
@@ -217,20 +216,11 @@ Page({
 
     } catch (error: any) {
       console.error('Delete land block failed:', error);
-      
-      let errorMessage = '删除失败';
-      if (error?.message && error.message.includes('associated')) {
-        errorMessage = '该地块还有相关数据，请先删除相关记录';
-      } else if (error?.message) {
-        errorMessage = `删除失败: ${error.message}`;
-      }
-
       wx.showToast({
-        title: errorMessage,
+        title: '删除失败',
         icon: 'error',
         duration: 3000
       });
-      
       this.setData({ deleting: false });
     }
   },

@@ -128,7 +128,7 @@ create policy "Users can insert own images" on public.images for insert with che
 
 1.  Install dependencies:
     ```bash
-    npm install supabase-wechat-stable
+    npm install supabase-wechat-stable-v2
     ```
 2.  In WeChat Developer Tools, go to **Tools -> Build npm**.
 

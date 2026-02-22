@@ -6,6 +6,8 @@
     "pages/check-content/check-content",
     "pages/statistics/statistics",
     "pages/manage-landblocks/manage-landblocks",
+    "pages/content-detail/content-detail",
+    "pages/content-edit/content-edit",
     "pages/logs/logs"
   ],
   "tabBar": {

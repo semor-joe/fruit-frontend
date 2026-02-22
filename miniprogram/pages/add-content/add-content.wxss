@@ -19,6 +19,17 @@
   margin-bottom: 20rpx;
 }
 
+.empty-landblock-hint {
+  padding: 20rpx;
+  background: #fff8e1;
+  border-radius: 8rpx;
+  border: 1rpx solid #ffe082;
+  margin-bottom: 20rpx;
+  text-align: center;
+  color: #f57c00;
+  font-size: 28rpx;
+}
+
 .section-actions {
   display: flex;
   gap: 20rpx;

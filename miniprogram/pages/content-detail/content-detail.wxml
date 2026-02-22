@@ -1,0 +1,230 @@
+<view class="container" wx:if="{{!loading}}">
+  <!-- Action Bar (below native nav bar) -->
+  <view class="action-bar">
+    <text class="action-btn" bindtap="editContent">编辑</text>
+    <text class="action-btn delete" bindtap="deleteContent">删除</text>
+  </view>
+
+  <!-- Content Sections -->
+  <view class="content-sections">
+    <!-- Fertilizer Section -->
+    <view class="section-card fertilizer-section">
+      <view class="section-header">
+        <view class="header-content">
+          <view class="header-left-inner">
+            <text class="section-icon">🌱</text>
+            <text class="section-title">肥料信息</text>
+          </view>
+          <view class="fertilizer-summary" wx:if="{{content.total_fertilizer_count > 0}}">
+            <text class="summary-badge">{{content.total_fertilizer_count}}种</text>
+            <text class="summary-total">总计 {{content.total_fertilizer_amount}}kg</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="fertilizer-container" wx:if="{{content.prioritized_fertilizers && content.prioritized_fertilizers.length > 0}}">
+        <view class="fertilizer-table">
+          <view class="table-header">
+            <view class="table-cell header-cell name-col">肥料名称</view>
+            <view class="table-cell header-cell amount-col">用量</view>
+            <view class="table-cell header-cell unit-col">单位</view>
+          </view>
+          <view class="table-row" wx:for="{{content.prioritized_fertilizers}}" wx:key="index" wx:for-item="fertilizer">
+            <view class="table-cell name-cell"><text class="fertilizer-name">{{fertilizer.name}}</text></view>
+            <view class="table-cell amount-cell"><text class="fertilizer-amount">{{fertilizer.amount}}</text></view>
+            <view class="table-cell unit-cell"><text class="fertilizer-unit">{{fertilizer.unit}}</text></view>
+          </view>
+        </view>
+        <view class="fertilizer-summary-footer">
+          <view class="summary-item">
+            <text class="summary-label">肥料种类:</text>
+            <text class="summary-value">{{content.total_fertilizer_count}} 种</text>
+          </view>
+          <view class="summary-item total-highlight">
+            <text class="summary-label">总用量:</text>
+            <text class="summary-value">{{content.total_fertilizer_amount}} kg</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="empty-state" wx:else>
+        <view class="empty-icon-text">📋</view>
+        <text class="empty-text">暂无肥料信息</text>
+        <text class="empty-subtitle">等待AI分析或手动添加</text>
+      </view>
+    </view>
+
+    <!-- Info Grid -->
+    <view class="info-grid">
+      <view class="info-card size-card" wx:if="{{content.fruit_size}}">
+        <view class="card-header">
+          <text class="card-icon">📏</text>
+          <text class="card-title">果实规格</text>
+        </view>
+        <view class="card-content">
+          <text class="size-value">直径{{content.fruit_size}}</text>
+        </view>
+      </view>
+
+      <view class="info-card date-card">
+        <view class="card-header">
+          <text class="card-icon">📅</text>
+          <text class="card-title">记录信息</text>
+        </view>
+        <view class="card-content date-content">
+          <view class="date-row">
+            <text class="date-label">创建</text>
+            <text class="date-value">{{content.formatted_created_at}}</text>
+          </view>
+          <view class="date-row" wx:if="{{content.formatted_updated_at}}">
+            <text class="date-label">更新</text>
+            <text class="date-value">{{content.formatted_updated_at}}</text>
+          </view>
+          <view class="date-row location-row">
+            <text class="date-label">地块</text>
+            <text class="date-value location-value">{{landBlockName}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="info-card crop-card" wx:if="{{content.crop_type && content.crop_type !== '未知作物'}}">
+        <view class="card-header">
+          <text class="card-icon">🌾</text>
+          <text class="card-title">作物类型</text>
+        </view>
+        <view class="card-content">
+          <text class="crop-value">{{content.crop_type}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- Description Section -->
+    <view class="section-card description-section">
+      <view class="section-header">
+        <view class="header-content">
+          <view class="header-left-inner">
+            <text class="section-icon">📝</text>
+            <text class="section-title">详细描述</text>
+          </view>
+        </view>
+      </view>
+      <view class="description-container">
+        <view class="primary-content">
+          <text class="description-text">{{content.primary_description}}</text>
+        </view>
+        <view class="secondary-content" wx:if="{{content.secondary_info}}">
+          <view class="secondary-header">
+            <text class="secondary-icon">💡</text>
+            <text class="secondary-title">补充信息</text>
+          </view>
+          <text class="secondary-text">{{content.secondary_info}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Image Section -->
+  <view class="section-card image-section" wx:if="{{content.img_url || content.image_url}}">
+    <view class="section-header">
+      <view class="header-content">
+        <view class="header-left-inner">
+          <text class="section-icon">📷</text>
+          <text class="section-title">相关图片</text>
+        </view>
+      </view>
+    </view>
+    <view class="image-container" style="padding: 0 40rpx 40rpx;">
+      <image
+        class="main-image"
+        src="{{content.img_url || content.image_url}}"
+        mode="aspectFill"
+        bindtap="previewImage"
+      ></image>
+      <view class="image-overlay">
+        <text class="preview-hint">点击查看大图</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- AI Analysis Section -->
+  <view class="section-card analysis-section" wx:if="{{content.extracted_data}}">
+    <view class="section-header">
+      <view class="header-content">
+        <view class="header-left-inner">
+          <text class="section-icon">🔬</text>
+          <text class="section-title">AI分析详情</text>
+        </view>
+        <text class="analysis-badge">智能分析</text>
+      </view>
+    </view>
+    <view class="analysis-grid">
+      <view class="analysis-card full-width" wx:if="{{content.extracted_data.conditions}}">
+        <view class="analysis-header">
+          <text class="analysis-icon">🌤️</text>
+          <text class="analysis-label">环境条件</text>
+        </view>
+        <text class="analysis-value">{{content.extracted_data.conditions}}</text>
+      </view>
+      <view class="analysis-card full-width" wx:if="{{content.extracted_data.suggestions}}">
+        <view class="analysis-header">
+          <text class="analysis-icon">💡</text>
+          <text class="analysis-label">专家建议</text>
+        </view>
+        <text class="analysis-value">{{content.extracted_data.suggestions}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Action Buttons -->
+  <view class="action-section">
+    <button class="primary-btn share-btn" open-type="share">
+      <text class="btn-icon">📤</text>
+      <text class="btn-text">分享记录</text>
+    </button>
+  </view>
+</view>
+
+<!-- Loading -->
+<view class="loading-container" wx:if="{{loading}}">
+  <text class="loading-text">加载中...</text>
+</view>
+
+<!-- Add Fertilizer Dialog -->
+<view class="fertilizer-dialog-overlay" wx:if="{{showAddFertilizerDialog}}" bindtap="hideAddFertilizerDialog">
+  <view class="fertilizer-dialog-container" catchtap="">
+    <view class="fertilizer-dialog-header">
+      <text class="dialog-title">添加肥料</text>
+      <text class="dialog-close-btn" bindtap="hideAddFertilizerDialog">×</text>
+    </view>
+    <view class="fertilizer-dialog-body" catchtap="">
+      <view class="fertilizer-form-item">
+        <text class="form-label">肥料名称 *</text>
+        <input class="form-input" placeholder="例如：复合肥NPK 15-15-15" value="{{newFertilizer.name}}" bindinput="onFertilizerNameInput"/>
+      </view>
+      <view class="fertilizer-form-row">
+        <view class="fertilizer-form-item flex-1">
+          <text class="form-label">用量 *</text>
+          <input class="form-input" placeholder="数量" type="digit" value="{{newFertilizer.amount}}" bindinput="onFertilizerAmountInput"/>
+        </view>
+        <view class="fertilizer-form-item flex-small">
+          <text class="form-label">单位</text>
+          <picker class="unit-picker" bindchange="onFertilizerUnitChange" range="{{['kg', 'g', 'L', 'ml']}}" catchtap="">
+            <view class="unit-picker-display" catchtap=""><text>{{newFertilizer.unit}}</text></view>
+          </picker>
+        </view>
+      </view>
+      <view class="fertilizer-form-item">
+        <text class="form-label">肥料类型</text>
+        <input class="form-input" placeholder="例如：复合肥、有机肥、叶面肥" value="{{newFertilizer.type}}" bindinput="onFertilizerTypeInput"/>
+      </view>
+      <view class="fertilizer-form-item">
+        <text class="form-label">NPK比例</text>
+        <input class="form-input" placeholder="例如：15-15-15" value="{{newFertilizer.npk_ratio}}" bindinput="onFertilizerNPKInput"/>
+      </view>
+    </view>
+    <view class="fertilizer-dialog-footer">
+      <button class="dialog-btn cancel-btn" bindtap="hideAddFertilizerDialog">取消</button>
+      <button class="dialog-btn add-btn" bindtap="addFertilizer">添加肥料</button>
+    </view>
+  </view>
+</view>
